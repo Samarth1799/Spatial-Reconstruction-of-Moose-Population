@@ -37,7 +37,7 @@ require(truncnorm)
 ###############################################################################
 # Import three-tier age-at-harvest matrix
 { ## Import values as a matrix with each year as a row
-h <- matrix(c(24, 181, 180,
+h <- matrix(c(2, 181, 180,
 158, 208, 152,
 232, 179, 86,
 142, 241, 204,
