@@ -9,7 +9,7 @@
 ############################################################################### 
 
 ############################################################################### 
-############################# Set Up Work Space ############################## 
+############################## Set Up Work Space ############################## 
 ############################################################################### 
 
 # Clear global environment, import required packages, and set working directory 
@@ -200,17 +200,28 @@ objectiveFunction <- function(par) {
     
     ### Radio telemetry
     {
-      #  logL_R1 <- binom_coeff_log(n_u,u) + u*log(P) + (n_u-u)*log(1-P)
-      #   logL_R1[u==0] = 0
-      #  logL_R2 <- binom_coeff_log(n_v,v) + v*log(P) + (n_v-v)*log(1-P)
-      #   logL_R2[v==0] = 0
+     logL_R1 <- binom_coeff_log(n_u,u) + u*log(P) + (n_u-u)*log(1-P)
+     logL_R1[u==0] = 0
+     logL_R1[n_u==0] = 0
+     
+    logL_R2 <- binom_coeff_log(n_v,v) + v*log(S) + (n_v-v)*log(1-S)
+    logL_R2[v==0] = 0
+    logL_R2 [n_v==0] = 0
+    }
+    
+    ### Aerial survey
+    {
+      logL_AS <- -0.5*log(2*pi*s) - 0.5*((N-a)/s)^2
+      logL_AS[is.na(a)] = 0
+      logL_AS[is.na(s)] = 0
     }
     
   } 
   
   ## Return value of objective function if valid 
   { 
-    logLikelihood <- -c(logL_AAH, logL_R1, logL_R2) 
+    logLikelihood <- -c(logL_AAH, logL_R1, logL_R2, logL_AS) 
+    # logL_R2
     
     if (any(is.na(logLikelihood)))     return (9000003) else 
       if (any(logLikelihood == -Inf))  return (9000002) else 
