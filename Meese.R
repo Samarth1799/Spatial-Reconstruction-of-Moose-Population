@@ -204,14 +204,14 @@ objectiveFunction <- function(par) {
      logL_R1[u==0] = 0
      logL_R1[n_u==0] = 0
      
-    logL_R2 <- binom_coeff_log(n_v,v) + v*log(S) + (n_v-v)*log(1-S)
+    logL_R2 <- binom_coeff_log(n_v,v) + v*log(1-S) + (n_v-v)*log(S)
     logL_R2[v==0] = 0
     logL_R2 [n_v==0] = 0
     }
     
     ### Aerial survey
     {
-      logL_AS <- -0.5*log(2*pi*s) - 0.5*((N-a)/s)^2
+      logL_AS <- -0.5*log(2*pi) - log(s) - 0.5*((N-a)/s)^2
       logL_AS[is.na(a)] = 0
       logL_AS[is.na(s)] = 0
     }
@@ -236,19 +236,11 @@ objectiveFunction <- function(par) {
 
 # Initialize data frames to store results 
 { 
-  pointEstimatesPSO <- cbind(data.frame(N11 = rep(NA, 4), N12 = NA, N13 = NA), 
+  pointEstimatesBFG <- cbind(data.frame(N11 = rep(NA, 4), N12 = NA, N13 = NA), 
                              data.frame(matrix(NA, nrow = 4, ncol = (Y - 1))), 
                              data.frame(C1 = rep(NA,  4), C2 = NA, C3 = NA, 
                                         S1 = NA, S2 = NA, S3 = NA, VAL = NA)) 
-  populationSizePSO <- data.frame(matrix(NA, nrow = 4, ncol = Y)) 
-  
-  pointEstimatesSPG <- pointEstimatesPSO 
-  pointEstimatesNLM <- pointEstimatesPSO 
-  pointEstimatesBFG <- pointEstimatesPSO 
-  
-  populationSizeSPG <- populationSizePSO 
-  populationSizeNLM <- populationSizePSO 
-  populationSizeBFG <- populationSizePSO 
+  populationSizeBFG <- data.frame(matrix(NA, nrow = 4, ncol = Y)) 
 } 
 
 # Initialize starting values for parameterization 
