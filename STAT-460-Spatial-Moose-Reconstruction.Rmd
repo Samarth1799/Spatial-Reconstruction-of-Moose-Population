@@ -226,8 +226,6 @@ rep(c(0.10, 0.70), each = A) * scaleFactor)
 }
 # Optimize parameter space using four different numerical optimization methods
 { ## Initialize model counter
-{ modelCount <- 1
-}
 ## Cycle through possible vulnerability and survival delineations
 for (vulnerability in c(1,3)) {
 for (survivability in c(1,3)) {
@@ -243,9 +241,6 @@ pointEstimatesBFG[modelCount, ] <- c(optimized$par,
 optimized$value)
 populationSizeBFG[modelCount, ] <- rowSums(estimatedN)
 returnPopulationAbundance <- FALSE
-}
-### Increment model counter
-{ modelCount <- modelCount + 1
 }
 }
 }
@@ -266,7 +261,7 @@ Measure = rep(c("Abundance",
 each = length(yearRange)))
 }
 ## Calculate standard errors for best-fit model parameters
-{ bestParameters <- as.numeric(pointEstimatesPSO[4, 1:(A + Y - 1 + A + A)])
+{ bestParameters <- as.numeric(pointEstimatesBFG[4, 1:(A + Y - 1 + A + A)])
 vulnerability <- 3
 survivability <- 3
 returnPopulationAbundance <- FALSE
