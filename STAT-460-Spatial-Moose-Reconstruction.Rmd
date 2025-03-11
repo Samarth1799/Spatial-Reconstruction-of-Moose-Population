@@ -36,36 +36,94 @@ require(truncnorm)
 ############################# Import Harvest Data #############################
 ###############################################################################
 # Import three-tier age-at-harvest matrix
-{ ## Import values as a matrix with each year as a row
-h <- matrix(c(2444, 181, 180,
-158, 208, 152,
-232, 179, 86,
-142, 241, 204,
-127, 281, 206,
-174, 260, 182), byrow = T, nrow = 6, ncol = 3)
+{ 
+  ## Import values as a matrix with each year as a row
+  h <- matrix(c(0,0,0,0,0,0,0,0,0,0,0,28,0,0,25,0,0,26,0,0,25,0,0,38,0,0,
+                29,0,0,37,0,0,24), 
+              ncol = 3, byrow = T, 
+              dimnames = list(c(2013:2023), c("CALVES","COWS","BULLS"))) 
 }
 # Import estimates of yearly catch-effort
-{ f <- c(1.1552360, 0.9585951, 1.1134204, 0.8088820, 0.9529701, 1.0108965)
+{   
+  f <- c(0,0,0,0.56,0.64,0.75,0.75,0.75,0.87,1.05,0.97)
 }
+
+# Import number available u
+{
+  n_u <- matrix(c(0,0,1,0,0,3,0,0,5,0,0,22,0,0,10,0,0,10,0,0,11,
+                  0,0,17,0,0,20,0,0,0,0,0,0), 
+                ncol = 3, byrow = T, 
+                dimnames = list(c(2013:2023), c("CALVES","COWS","BULLS")))
+}
+
+# Import telemetry hunted
+{
+  u <- matrix(c(0,0,0,0,0,0,0,0,0,0,0,2,0,0,3,0,0,0,0,0,
+                1,0,0,0,0,0,2,0,0,0,0,0,0), 
+              ncol = 3, byrow = T, 
+              dimnames = list(c(2013:2023), c("CALVES","COWS","BULLS")))
+}
+
+# Import number available v
+{
+  n_v <- matrix(c(0,95,23,0,90,30,0,67,28,0,45,20,0,21,         7,0,20,10,0,35,10,0,37,17,0,40,18,0, 0, 0,0, 0, 0), 
+                ncol = 3, byrow = T, 
+                dimnames = list(c(2013:2023), c("CALVES","COWS","BULLS")))
+}
+
+# Import non-harvest deaths
+{
+  v <- matrix(c(0,14,2,0,14,4,0,9,6,0,6,3,0,3,1,0,1,1,0,5,4,0,3,3,0,10,3,0,0,0,0,0,0), 
+              ncol = 3, byrow = T, 
+              dimnames = list(c(2013:2023), c("CALVES","COWS","BULLS")))
+}
+
+# Import aerial estimate
+{
+  a <- matrix(c(714,1623,2013,439,1513,1498,689,1641,1690,588,1634,1487,428,1156,1446,522,1633,2025,502,1394,1254,NA,NA,NA,885,1967,1849,474,1246,1570,623,1222,1625), 
+              ncol = 3, byrow = T, 
+              dimnames = list(c(2013:2023), c("CALVES","COWS","BULLS")))
+}
+
+# Import standard error aerial estimate
+{
+  s <- matrix(c(149,339,420,84,288,285,102,242,249,82,228,207,78,211,264,89,277,343,93,258,232,NA,NA,NA,191,425,399,91,239,302,29,254,337), 
+              ncol = 3, byrow = T, 
+              dimnames = list(c(2013:2023), c("CALVES","COWS","BULLS")))
+}
+
+
 ## Define number of years and age classes
 { Y <- nrow(h)
 A <- ncol(h)
-yearRange <- c(2015, 2016, 2017, 2018, 2019, 2020)
+yearRange <- c(2013:2023)
 }
 # Set reasonable limits for survival and harvest vulnerability
 { limitForC <- c(0.05, 0.50)
 limitForS <- c(0.50, 0.95)
+}
+
+# Define function to calculate the log of a binomial coefficient
+{
+  binom_coeff_log <- function(n, k) {
+    log_n <- lgamma(n + 1)
+    log_k <- lgamma(k + 1)
+    log_nk <- lgamma(n - k + 1)
+    return(log_n - (log_k + log_nk))
+  }
 }
 ###############################################################################
 ########################## Define Objective Function ##########################
 ###############################################################################
 # Define objective function using a multinomial likelihood formulation
 objectiveFunction <- function(par) {
+  
 ## Import initial (diagonal) cohort values
 { N <- matrix(NA, nrow = Y, ncol = A)
 N[1, 1:A] <- par[1:A]
 N[2:Y, 1] <- par[(A + 1):(A + Y - 1)]
 }
+  
 ## Import vulnerability and survival estimates
 { if (vulnerability == 1) {
 C <- matrix(par[Y + (A - 1) + c(1, 1, 1)] / scaleFactor,
@@ -109,14 +167,7 @@ N[i, j + 1] * (1 - P[i, j + 1]) * S[i, j + 1]
 # Return population size estimate (if requested)
 { if (returnPopulationAbundance) return (N)
 }
-# Perform initial test of model boundaries
-{ if (any(N < h)) return (9000009)
-if (any(C < limitForC[1],
-C > limitForC[2])) return (9000008)
-if (any(S < limitForS[1],
-S > limitForS[2])) return (9000007)
-if (any(P + (1 - S) > 0.500)) return (9000006)
-}
+
 # Define expected harvest values
 { E <- N * P
 }
@@ -126,52 +177,15 @@ return (sum((h - E) ^ 2 / E))
 }
 }
 ## Calculate contributions of each likelihood component
-{ ### Initialize the age-at-harvest and catch-effort components
-{ logL_AAH <- matrix(0, nrow = Y, ncol = A)
-logL_CAE <- matrix(0, nrow = Y, ncol = A)
-}
+
 ### Contribution of the age-at-harvest component
-{ logL_AAH[1, A] <- sum(log((N[1,3] + 1 - 1:h[1,3]) / 1:h[1,3])) +
-h[1,3] * (log( P[1,A])) +
-(N[1,3] - h[1,3]) * (log(1 - P[1,A]))
-logL_AAH[1, (A - 1)] <- sum(log((h[1,2] + h[2,3] + 1 - 1:h[1,2]) /
-1:h[1,2])) +
-h[1,2] * log(E[1,2] / (E[1,2] + E[2,3])) +
-h[2,3] * log(E[2,3] / (E[1,2] + E[2,3]))
-for (i in 1 : (Y - 2)) {
-logL_AAH[i, 1] <- sum(log((h[i,1] + h[i+1,2] + h[i+2,3] +
-1 - 1:h[i,1]) / 1:h[i,1])) +
-sum(log((h[i+1,2] + h[i+2,3] +
-1 - 1:h[i+1,2]) / 1:h[i+1,2])) +
-h[i+0,1] * log(E[i+0,1] / (E[i,1] + E[i+1,2] + E[i+2,3])) +
-h[i+1,2] * log(E[i+1,2] / (E[i,1] + E[i+1,2] + E[i+2,3])) +
-h[i+2,3] * log(E[i+2,3] / (E[i,1] + E[i+1,2] + E[i+2,3]))
+{ 
+  logL_AAH <- binom_coeff_log(N,h) + h*log(P) + (N-h)*log(1-P)
+      logL_AAH[h==0] = 0
 }
-logL_AAH[(Y - 1), 1] <- sum(log((N[Y-1,1] +
-1 - 1:h[Y-1,1]) / 1:h[Y-1,1])) + sum(log((N[Y-1,1] - h[Y-1,1] +
-1 - 1:h[Y,2]) / 1:h[Y,2])) +
-(h[Y-1,1]) * log(( P[Y-1,1])) +
-(h[Y,2]) * log((1 - P[Y-1,1]) *
-S[1] * P[Y,2]) +
-(N[Y-1,1] - h[Y-1,1] - h[Y,2]) * log((1 - P[Y-1,1]) *
-(1 - S[1] * P[Y,2]))
-logL_AAH[Y, 1] <- sum(log((N[Y,1] + 1 - 1:h[Y,1]) / 1:h[Y,1])) +
-(h[Y,1]) * (log( P[Y,1])) +
-(N[Y,1] - h[Y,1]) * (log(1 - P[Y,1]))
-}
-### Contribution of the catch-effort component
-{ for (i in 1:Y) {
-for (j in 1:A) {
-logL_CAE[i,j] <- sum(log((sum(N[i,j]) + 1 - 1:sum(h[i,j])) /
-1:sum(h[i,j]))) +
-sum(h[i,j]) * (log( P[i,j])) +
-sum(N[i,j] - h[i,j]) * (log(1 - P[i,j]))
-}
-}
-}
-}
+
 ## Return value of objective function if valid
-{ logLikelihood <- -c(logL_AAH, logL_CAE)
+{ logLikelihood <- -c(logL_AAH)
 if (any(is.na(logLikelihood))) return (9000003) else
 if (any(logLikelihood == -Inf)) return (9000002) else
 if (any(logLikelihood == Inf)) return (9000001) else
@@ -182,17 +196,18 @@ return(sum(logLikelihood))
 ############### Perform NUMERICAL OPTIMIZATION of Observed Data ###############
 ###############################################################################
 # Initialize data frames to store results
-{ pointEstimatesPSO <- cbind(data.frame(N11 = rep(NA, 4), N12 = NA, N13 = NA),
-data.frame(matrix(NA, nrow = 4, ncol = (Y - 1))),
-data.frame(C1 = rep(NA, 4), C2 = NA, C3 = NA,
-S1 = NA, S2 = NA, S3 = NA, VAL = NA))
-populationSizePSO <- data.frame(matrix(NA, nrow = 4, ncol = Y))
-pointEstimatesSPG <- pointEstimatesPSO
-pointEstimatesNLM <- pointEstimatesPSO
-pointEstimatesBFG <- pointEstimatesPSO
-populationSizeSPG <- populationSizePSO
-populationSizeNLM <- populationSizePSO
-populationSizeBFG <- populationSizePSO
+{ 
+  pointEstimatesPSO <- cbind(data.frame(N11 = rep(NA, 4), N12 = NA, N13 = NA),data.frame(matrix(NA, nrow = 4, ncol = (Y - 1))),data.frame(C1 = rep(NA, 4), C2 = NA, C3 = NA,S1 = NA, S2 = NA, S3 = NA, VAL = NA))
+  populationSizePSO <- data.frame(matrix(NA, nrow = 4, ncol = Y)) 
+  
+  pointEstimatesSPG <- pointEstimatesPSO 
+  pointEstimatesNLM <- pointEstimatesPSO 
+  pointEstimatesBFG <- pointEstimatesPSO 
+  
+  populationSizeSPG <- populationSizePSO 
+  populationSizeNLM <- populationSizePSO 
+  populationSizeBFG <- populationSizePSO 
+
 }
 # Initialize starting values for parameterization
 { scaleFactor <- 1e5
@@ -206,62 +221,12 @@ rep(c(0.10, 0.70), each = A) * scaleFactor)
 ## Cycle through possible vulnerability and survival delineations
 for (vulnerability in c(1,3)) {
 for (survivability in c(1,3)) {
-### Optimize objective function using particle swarm optimization
-{ returnPopulationAbundance <- FALSE
-returnChiSquareCorrection <- FALSE
-optimized <- psoptim(par = initialValues,
-fn = objectiveFunction,
-lower = c(rep(c(00000), A + Y - 1),
-rep(limitForC[1] * scaleFactor, A),
-rep(limitForS[1] * scaleFactor, A)),
-upper = c(rep(c(20000), A + Y - 1),
-rep(limitForC[2] * scaleFactor, A),
-rep(limitForS[2] * scaleFactor, A)),
-control = list(maxit = 10000, trace = F,
-hybrid = "improved",
-vectorize = TRUE, type = "SPSO2011"))
-returnPopulationAbundance <- TRUE
-estimatedN <- objectiveFunction(optimized$par)
-pointEstimatesPSO[modelCount, ] <- c(optimized$par,
-optimized$value)
-populationSizePSO[modelCount, ] <- rowSums(estimatedN)
-returnPopulationAbundance <- FALSE
-}
-### Optimize objective function using a spectral projected gradient
-{ returnPopulationAbundance <- FALSE
-returnChiSquareCorrection <- FALSE
-optimized <- spg(par = initialValues, fn = objectiveFunction,
-lower = c(rep(c(00000), A + Y - 1),
-rep(limitForC[1] * scaleFactor, A),
-rep(limitForS[1] * scaleFactor, A)),
-upper = c(rep(c(20000), A + Y - 1),
-rep(limitForC[2] * scaleFactor, A),
-rep(limitForS[2] * scaleFactor, A)),
-control = list(maxit = 1e7, trace = F))
-returnPopulationAbundance <- TRUE
-estimatedN <- objectiveFunction(optimized$par)
-pointEstimatesSPG[modelCount, ] <- c(optimized$par,
-optimized$value)
-populationSizeSPG[modelCount, ] <- rowSums(estimatedN)
-returnPopulationAbundance <- FALSE
-}
-### Optimize objective function using the Nelder–Mead method
-{ returnPopulationAbundance <- FALSE
-returnChiSquareCorrection <- FALSE
-optimized <- optim(par = initialValues, fn = objectiveFunction,
-control = list(maxit = 1e7))
-returnPopulationAbundance <- TRUE
-estimatedN <- objectiveFunction(optimized$par)
-pointEstimatesNLM[modelCount, ] <- c(optimized$par,
-optimized$value)
-populationSizeNLM[modelCount, ] <- rowSums(estimatedN)
-returnPopulationAbundance <- FALSE
-}
+
 ### Optimize objective function using the BFGS method
 { returnPopulationAbundance <- FALSE
 returnChiSquareCorrection <- FALSE
 optimized <- optim(par = initialValues, fn = objectiveFunction,
-method = "BFGS", control = list(maxit = 1e7))
+method = "L-BFGS-B", lower = 0.001, upper = scaleFactor, control = list(maxit = 1e7))
 returnPopulationAbundance <- TRUE
 estimatedN <- objectiveFunction(optimized$par)
 pointEstimatesBFG[modelCount, ] <- c(optimized$par,
@@ -275,12 +240,7 @@ returnPopulationAbundance <- FALSE
 }
 }
 ## Compute AIC for each reconstruction estimate
-{ pointEstimatesPSO$AIC <- 2 * pointEstimatesPSO$VAL +
-2 * ((A + Y - 1) + c(2, 4, 4, 6))
-pointEstimatesSPG$AIC <- 2 * pointEstimatesSPG$VAL +
-2 * ((A + Y - 1) + c(2, 4, 4, 6))
-pointEstimatesNLM$AIC <- 2 * pointEstimatesNLM$VAL +
-2 * ((A + Y - 1) + c(2, 4, 4, 6))
+{
 pointEstimatesBFG$AIC <- 2 * pointEstimatesBFG$VAL +
 2 * ((A + Y - 1) + c(2, 4, 4, 6))
   }
