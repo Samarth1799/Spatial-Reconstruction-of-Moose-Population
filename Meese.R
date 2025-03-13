@@ -94,13 +94,6 @@
   yearRange <- c(2013:2023) 
 } 
 
-
-# Set reasonable limits for survival and harvest vulnerability 
-{ 
-  limitForC <- c(0.05, 0.50) 
-  limitForS <- c(0.50, 0.95) 
-}
-
 # Define function to calculate the log of a binomial coefficient
 {
   binom_coeff_log <- function(n, k) {
@@ -126,32 +119,13 @@ objectiveFunction <- function(par) {
   } 
   
   ## Import vulnerability and survival estimates 
-  { 
-    if (vulnerability == 1) { 
-      C <- matrix(par[Y + (A - 1) + c(1, 1, 1)] / scaleFactor,  
+   { 
+      C <- matrix(par[Y + (A - 1) + c(1)] / scaleFactor,  
+                  nrow = Y, ncol = A, byrow = T) 
+      S <- matrix(par[Y + (A - 1) + c(2, 3, 4)] / scaleFactor,  
                   nrow = Y, ncol = A, byrow = T) 
     } 
-    if (vulnerability == 2) { 
-      C <- matrix(par[Y + (A - 1) + c(1, 2, 2)] / scaleFactor,  
-                  nrow = Y, ncol = A, byrow = T) 
-    } 
-    if (vulnerability == 3) { 
-      C <- matrix(par[Y + (A - 1) + c(1, 2, 3)] / scaleFactor,  
-                  nrow = Y, ncol = A, byrow = T) 
-    } 
-    if (survivability == 1) { 
-      S <- matrix(par[Y + (A - 1) + c(4, 4, 4)] / scaleFactor,  
-                  nrow = Y, ncol = A, byrow = T) 
-    } 
-    if (survivability == 2) { 
-      S <- matrix(par[Y + (A - 1) + c(4, 5, 5)] / scaleFactor,  
-                  nrow = Y, ncol = A, byrow = T) 
-    } 
-    if (survivability == 3) { 
-      S <- matrix(par[Y + (A - 1) + c(4, 5, 6)] / scaleFactor,  
-                  nrow = Y, ncol = A, byrow = T) 
-    } 
-  } 
+
   
   ## Define probability of harvest 
   { 
@@ -182,13 +156,6 @@ objectiveFunction <- function(par) {
     E <- N * P 
   } 
   
-  ## Return chi-square estimate for inflation factor if requested 
-  { 
-    if (returnChiSquareCorrection) { 
-      return (sum((h - E) ^ 2 / E)) 
-    } 
-  } 
-  
   ## Calculate contributions of each likelihood component 
   { 
     
@@ -204,9 +171,9 @@ objectiveFunction <- function(par) {
      logL_R1[u==0] = 0
      logL_R1[n_u==0] = 0
      
-    logL_R2 <- binom_coeff_log(n_v,v) + v*log(1-S) + (n_v-v)*log(S)
-    logL_R2[v==0] = 0
-    logL_R2 [n_v==0] = 0
+     logL_R2 <- binom_coeff_log(n_v,v) + v*log(1-S) + (n_v-v)*log(S)
+     logL_R2[v==0] = 0
+     logL_R2 [n_v==0] = 0
     }
     
     ### Aerial survey
@@ -221,7 +188,6 @@ objectiveFunction <- function(par) {
   ## Return value of objective function if valid 
   { 
     logLikelihood <- -c(logL_AAH, logL_R1, logL_R2, logL_AS) 
-    # logL_R2
     
     if (any(is.na(logLikelihood)))     return (9000003) else 
       if (any(logLikelihood == -Inf))  return (9000002) else 
@@ -238,7 +204,7 @@ objectiveFunction <- function(par) {
 { 
   pointEstimatesBFG <- cbind(data.frame(N11 = rep(NA, 4), N12 = NA, N13 = NA), 
                              data.frame(matrix(NA, nrow = 4, ncol = (Y - 1))), 
-                             data.frame(C1 = rep(NA,  4), C2 = NA, C3 = NA, 
+                             data.frame(C1 = rep(NA,  4), 
                                         S1 = NA, S2 = NA, S3 = NA, VAL = NA)) 
   populationSizeBFG <- data.frame(matrix(NA, nrow = 4, ncol = Y)) 
 } 
@@ -247,52 +213,31 @@ objectiveFunction <- function(par) {
 { 
   scaleFactor <- 1e5 
   initialValues <- c(rep(c(mean(h) * 10), Y + (A - 1)), 
-                     rep(c(0.10, 0.70), each = A) * scaleFactor) 
+                     (c(0.10, 0.70, 0.70, 0.70)) * scaleFactor) 
 } 
 
-# Optimize parameter space using four different numerical optimization methods 
+# Optimize parameter space using a numerical optimization method
 { 
-  ## Initialize model counter 
+      
+  ### Optimize objective function using the BFGS method 
   { 
-    modelCount <- 1 
+    returnPopulationAbundance <- FALSE 
+    returnChiSquareCorrection <- FALSE 
+    optimized <- optim(par = initialValues, fn = objectiveFunction,  
+                       method = "L-BFGS-B", lower = 0.001, upper = scaleFactor,
+                       control = list(maxit = 1e7, trace = 1)) 
+    
+    returnPopulationAbundance <- TRUE 
+    
+    estimatedN <- objectiveFunction(optimized$par) 
+    
+    pointEstimatesBFG[1, ] <- c(optimized$par, 
+                                         optimized$value) 
+    populationSizeBFG[1, ] <- rowSums(estimatedN) 
+    returnPopulationAbundance <- FALSE 
   } 
-  
-  ## Cycle through possible vulnerability and survival delineations 
-  for (vulnerability in c(1,3)) { 
-    for (survivability in c(1,3)) { 
-      
-      
-      ### Optimize objective function using the BFGS method 
-      { 
-        returnPopulationAbundance <- FALSE 
-        returnChiSquareCorrection <- FALSE 
-        optimized <- optim(par = initialValues, fn = objectiveFunction,  
-                           method = "L-BFGS-B", lower = 0.001, upper = scaleFactor,
-                           control = list(maxit = 1e7)) 
-        
-        returnPopulationAbundance <- TRUE 
-        
-        estimatedN <- objectiveFunction(optimized$par) 
-        
-        pointEstimatesBFG[modelCount, ] <- c(optimized$par, 
-                                             optimized$value) 
-        populationSizeBFG[modelCount, ] <- rowSums(estimatedN) 
-        returnPopulationAbundance <- FALSE 
-      } 
-      
-      ### Increment model counter 
-      { 
-        modelCount <- modelCount + 1 
-      } 
-    } 
-  } 
-  
-  ## Compute AIC for each reconstruction estimate 
-  { 
-    pointEstimatesBFG$AIC <- 2 * pointEstimatesBFG$VAL +  
-      2 * ((A + Y - 1) + c(2, 4, 4, 6)) 
-  } 
-} 
+ 
+}
 
 # Extract uncertainty estimates for best-fit model 
 { ## Construct data frame to compile subsequent results 
@@ -307,7 +252,7 @@ objectiveFunction <- function(par) {
   
   ## Calculate standard errors for best-fit model parameters 
   { 
-    bestParameters <- as.numeric(pointEstimatesPSO[4, 1:(A + Y - 1 + A + A)]) 
+    bestParameters <- as.numeric(pointEstimatesBFG[4, 1:(A + Y - 1 + A + A)]) 
     vulnerability <- 3 
     survivability <- 3 
     
@@ -378,12 +323,13 @@ objectiveFunction <- function(par) {
 
 # Generate figure of abundance and recruitment estimates 
 { 
+  Estimate <- populationSizeBFG[4,]
   ggplot(aes(y = Estimate, x = Year, fill = Measure),  
          data = bestFitModel) +  
     geom_ribbon(aes(ymin = Lo95CI, ymax = Hi95CI,  
                     fill = Measure), alpha = 0.25) + 
     geom_point(aes(colour = Measure)) +  
-    geom_path(aes(colour = Measure, linetype = Measure), size = 1) + 
+    geom_path(aes(colour = Measure, linetype = Measure), linewidth = 1) + 
     scale_x_continuous(breaks = seq(min(yearRange), max(yearRange), 1)) + 
     scale_fill_manual(values = c("#F8766D", "#00BA38")) +  scale_color_manual(values = c("#F8766D", "#00BA38")) 
   
