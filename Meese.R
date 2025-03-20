@@ -30,12 +30,11 @@
 ############################# Import Data ############################# 
 ############################################################################### 
 
-<<<<<<< HEAD
-# Import three-tier age-at-harvest matri 
-=======
+# Import three-tier age-at-harvest matrix
+
 # Import three-tier age-at-harvest matrix 
 # h: Harvest counts for each year and age class (CALVES, COWS, BULLS).
->>>>>>> 8d8c72275bb4f3885504d84a15f165a7987dc828
+
 { 
   ## Import values as a matrix with each year as a row 
   h <- matrix(c(0,0,0,0,0,0,0,0,0,0,0,28,0,0,25,0,0,26,0,0,25,0,0,38,0,0,29,0,0,37,0,0,24), 
