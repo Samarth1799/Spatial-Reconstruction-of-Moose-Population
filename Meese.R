@@ -30,7 +30,24 @@
 ############################# Import Data ############################# 
 ############################################################################### 
 
+<<<<<<< HEAD
 # Import three-tier age-at-harvest matrix
+=======
+# Recreating DNR data
+{
+  install.packages("SightabilityModel")
+  library(SightabilityModel)
+  sampleinfo.m <-
+    obs.m <- 
+    # Estimate abundance for year = 2004
+    est.2013 <- Sight.Est(observed ~ voc, odat = subset(obs.m,year == 2013, sdat = exp.m,
+                                                        sampinfo = subset(sampinfo.m, year == 2013)))  
+  print(est.2013)
+  summary(est.2013)
+  
+}
+
+>>>>>>> 88db0a1de72394d6728a858d93a033b9bc868d95
 
 # Import three-tier age-at-harvest matrix 
 # h: Harvest counts for each year and age class (CALVES, COWS, BULLS).
