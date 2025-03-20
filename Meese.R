@@ -30,7 +30,7 @@
 ############################# Import Data ############################# 
 ############################################################################### 
 
-# Import three-tier age-at-harvest matrix 
+# Import three-tier age-at-harvest matri 
 { 
   ## Import values as a matrix with each year as a row 
   h <- matrix(c(0,0,0,0,0,0,0,0,0,0,0,28,0,0,25,0,0,26,0,0,25,0,0,38,0,0,29,0,0,37,0,0,24), 
