@@ -35,13 +35,17 @@
 install.packages("SightabilityModel")
 library(SightabilityModel)
 
-  sampleinfo.m <-
-    obs.m <- 
-    # Estimate abundance for year = 2004
-    est.2013 <- Sight.Est(observed ~ voc, odat = subset(obs.m,year == 2013, sdat = exp.m,
-                                                        sampinfo = subset(sampinfo.m, year == 2013)))  
-  print(est.2013)
-  summary(est.2013)
+data("obs.m")
+obs <- read.csv("C:\\Users\\Victoria\\Downloads\\obsNEW(Sheet1).csv", header = T)
+data("exp.m")
+sampinfo <- read.csv("C:\\Users\\Victoria\\Downloads\\sampinfo.csv", header = T)
+
+  # Estimate abundance for year = 2004
+
+  est.2004 <- Sight.Est(observed ~ voc, odat = subset(obs, year == 2013), sdat = exp.m,
+                          sampinfo = subset(sampinfo, year == 2013))  
+  print(est.2004)
+  summary(est.2004)
 
 
 # Import three-tier age-at-harvest matrix 
