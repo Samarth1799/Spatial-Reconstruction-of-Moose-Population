@@ -30,7 +30,12 @@
 ############################# Import Data ############################# 
 ############################################################################### 
 
+<<<<<<< HEAD
 # Import three-tier age-at-harvest matri 
+=======
+# Import three-tier age-at-harvest matrix 
+# h: Harvest counts for each year and age class (CALVES, COWS, BULLS).
+>>>>>>> 8d8c72275bb4f3885504d84a15f165a7987dc828
 { 
   ## Import values as a matrix with each year as a row 
   h <- matrix(c(0,0,0,0,0,0,0,0,0,0,0,28,0,0,25,0,0,26,0,0,25,0,0,38,0,0,29,0,0,37,0,0,24), 
@@ -39,11 +44,14 @@
 } 
 
 # Import estimates of yearly catch-effort 
+# This influences harvest vulnerability: higher f => higher chance of harvest.
 { 
   f <- c(0,0,0,0.56,0.64,0.75,0.75,0.75,0.87,1.05,0.97)
 } 
 
 # Import number available u
+# n_u: The number of moose "available" to be hunted each year (radio-collared).
+#      This is used to compare with how many were actually hunted (u).
 {
   n_u <- matrix(c(0,0,1,0,0,3,0,0,5,0,0,22,0,0,10,0,0,10,0,0,11,0,0,17,0,0,20,0,0,0,0,0,0), 
                 ncol = 3, byrow = T, 
@@ -51,6 +59,7 @@
 }
 
 # Import telemetry hunted
+# u: The actual number of moose (from radio-collared set) that were hunted.
 {
   u <- matrix(c(0,0,0,0,0,0,0,0,0,0,0,2,0,0,3,0,0,0,0,0,1,0,0,0,0,0,2,0,0,0,0,0,0), 
               ncol = 3, byrow = T, 
@@ -58,6 +67,7 @@
 }
 
 # Import number available v
+# n_v: The number of moose available to die from non-harvest causes (v).
 {
   n_v <- matrix(c(0,95,23,0,90,30,0,67,28,0,45,20,0,21, 7,0,20,10,0,35,10,0,37,17,0,40,18,0, 0, 0,0, 0, 0), 
                 ncol = 3, byrow = T, 
@@ -65,6 +75,7 @@
 }
 
 # Import non-harvest deaths
+# v: The actual number of moose (from n_v) that died from non-harvest causes.
 {
   v <- matrix(c(0,14,2,0,14,4,0,9,6,0,6,3,0,3,1,0,1,1,0,5,4,0,3,3,0,10,3,0,0,0,0,0,0), 
               ncol = 3, byrow = T, 
@@ -72,6 +83,7 @@
 }
 
 # Import aerial estimate
+# a: Aerial survey estimates of abundance, with rows = years and columns = age classes.
 {
   a <- matrix(c(714,1623,2013,439,1513,1498,689,1641,1690,588,1634,1487,428,1156,1446,522,1633,2025,502,1394,1254,NA,NA,NA,885,1967,1849,474,1246,1570,623,1222,1625), 
               ncol = 3, byrow = T, 
@@ -79,6 +91,7 @@
 }
 
 # Import standard error aerial estimate
+# s: Standard errors associated with the aerial survey estimates above.
 {
   s <- matrix(c(149,339,420,84,288,285,102,242,249,82,228,207,78,211,264,89,277,343,93,258,232,NA,NA,NA,191,425,399,91,239,302,29,254,337), 
               ncol = 3, byrow = T, 
@@ -112,6 +125,9 @@
 objectiveFunction <- function(par) { 
   
   ## Import initial (diagonal) cohort values 
+  # N is a matrix of abundance by year (rows) and age class (columns).
+  # The first row's abundances are parameters to be estimated (N[1,1], N[1,2], N[1,3]).
+  # Then the "recruitment" parameters fill N[2:Y, 1], i.e. new calves in subsequent years.
   { 
     N <- matrix(NA, nrow = Y, ncol = A) 
     N[1, 1:A] <- par[1:A] 
@@ -119,6 +135,12 @@ objectiveFunction <- function(par) {
   } 
   
   ## Import vulnerability and survival estimates 
+  # 'vulnerability' and 'survivability' are global variables controlling how 
+  # many distinct c and s values we fit. For example:
+  #   vulnerability=3 => separate vulnerability parameters for calves, cows, bulls.
+  #   survivability=3 => separate survival parameters for calves, cows, bulls.
+  #
+  # par[Y+(A-1)+...] are the relevant parameter slices, each divided by scaleFactor.
    { 
       C <- matrix(par[Y + (A - 1) + c(1)] / scaleFactor,  
                   nrow = Y, ncol = A, byrow = T) 
@@ -133,12 +155,14 @@ objectiveFunction <- function(par) {
   } 
   
   ## Define expected population sizes 
+  ## PROJECT THE POPULATION FORWARD ##
+  # Fill in future N values (year i+1) based on survival & harvest in year i.
   { 
     for (i in 1:(Y - 1)) { 
       for (j in 1:(A - 2)) { 
         N[i + 1, j + 1] <- N[i, j] * (1 - P[i, j]) * S[i, j] 
       }  
-      
+      # For the oldest age class, you often add animals that survive from the second-oldest class
       for (j in (A - 1)) { 
         N[i + 1, j + 1] <- N[i, j]     * (1 - P[i, j])     * S[i, j] + 
           N[i, j + 1] * (1 - P[i, j + 1]) * S[i, j + 1] 
@@ -167,9 +191,16 @@ objectiveFunction <- function(par) {
     
     ### Radio telemetry
     {
+      # n_u is the number of radio-collared moose available to be hunted,
+      # u is how many of those were actually hunted.
+      # Again, binomial with n_u trials, prob=P.
      logL_R1 <- binom_coeff_log(n_u,u) + u*log(P) + (n_u-u)*log(1-P)
      logL_R1[u==0] = 0
      logL_R1[n_u==0] = 0
+     
+     # n_v is the number of radio-collared moose available to die from other causes,
+     # v is how many actually died from those causes.
+     # Probability of non-harvest death = 1 - survival (S).
      
      logL_R2 <- binom_coeff_log(n_v,v) + v*log(1-S) + (n_v-v)*log(S)
      logL_R2[v==0] = 0
