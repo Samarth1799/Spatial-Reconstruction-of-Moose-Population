@@ -45,11 +45,14 @@ require(truncnorm)
               dimnames = list(c(2013:2023), c("CALVES","COWS","BULLS"))) 
 }
 # Import estimates of yearly catch-effort
+
+# This influences harvest vulnerability: higher f => higher chance of harvest.
 {   
   f <- c(0,0,0,0.56,0.64,0.75,0.75,0.75,0.87,1.05,0.97)
 }
 
 # Import number available u
+# n_u: The number of moose "available" to be hunted each year (radio-collared). This is used to compare with how many were actually hunted (u).
 {
   n_u <- matrix(c(0,0,1,0,0,3,0,0,5,0,0,22,0,0,10,0,0,10,0,0,11,
                   0,0,17,0,0,20,0,0,0,0,0,0), 
@@ -58,6 +61,7 @@ require(truncnorm)
 }
 
 # Import telemetry hunted
+# u: The actual number of moose (from radio-collared set) that were hunted. This lets us estimate harvest probability directly from telemetry data.
 {
   u <- matrix(c(0,0,0,0,0,0,0,0,0,0,0,2,0,0,3,0,0,0,0,0,
                 1,0,0,0,0,0,2,0,0,0,0,0,0), 
@@ -66,6 +70,7 @@ require(truncnorm)
 }
 
 # Import number available v
+# n_v: The number of moose available to die from non-harvest causes (v).
 {
   n_v <- matrix(c(0,95,23,0,90,30,0,67,28,0,45,20,0,21,         7,0,20,10,0,35,10,0,37,17,0,40,18,0, 0, 0,0, 0, 0), 
                 ncol = 3, byrow = T, 
