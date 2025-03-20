@@ -14,7 +14,7 @@
 
 # Clear global environment, import required packages, and set working directory 
 { 
-  rm(list=ls()) 
+  rm(list=ls())
   
   require(BB) 
   require(pso) 
