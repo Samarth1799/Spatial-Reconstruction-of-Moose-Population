@@ -34,7 +34,7 @@ Aerial_sf <- read_sf("C:\\Users\\Victoria\\OneDrive - University of St. Thomas\\
 plot(st_geometry(Aerial_sf))
 Aerial_map <- st_read("C:\\Users\\Victoria\\OneDrive - University of St. Thomas\\Desktop\\DASC 460\\Data\\Re_ DASC 460 - Moose Data for SPR\\ne_mn_aerial_plots_2024\\ne_mn_aerial_plots_2024\\2024NEMR.shp")
 
-g <- ggplot() + geom_sf(data = MN_map) + geom_sf(data = Zones_map)
+g <- ggplot() + geom_sf(data = Aerial_map)  + geom_sf(data = Zones_map) + geom_sf(MN_map)
 g
 
 # WHOLE CLUSTERING FUNCTION
@@ -131,9 +131,14 @@ Cluster <- function(sf, k, seed){
   
   
   tm_shape(sf) +
-    tm_polygons("cluster", palette = "Set1")
+    tm_polygons("cluster", palette = "Dark2")
 }
-Cluster(Zones, 5, 69)
+Cluster(Zones, 4, 69)
+
+
+
+
+
 
 
 
