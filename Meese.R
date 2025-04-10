@@ -36,29 +36,18 @@ install.packages("SightabilityModel")
 library(SightabilityModel)
 
 data("obs.m")
-<<<<<<< HEAD
-obs <- read.csv("C:\\Users\\Samarth\\Downloads\\obsNEW(Sheet1).csv", header = T)
-=======
 obs <- read.csv("C:\\Users\\Victoria\\Downloads\\obsNEW(Sheet1).csv", header = T)
 obs <- subset(obs, stratum!=4)
->>>>>>> 5531f9e97c8bb8fd2cb077cf0266128fef78de37
 data("exp.m")
-sampinfo <- read.csv("C:\\Users\\Samarth\\Downloads\\sampinfo.csv", header = T)
+sampinfo <- read.csv("C:\\Users\\Victoria\\Downloads\\sampinfo.csv", header = T)
 
 # Estimate abundance for year = 2004
 
-<<<<<<< HEAD
-est.2004 <- Sight.Est(observed ~ voc, odat = subset(obs, year == 2013), sdat = exp.m,
-                      sampinfo = subset(sampinfo, year == 2013))  
-print(est.2004)
-summary(est.2004)
-=======
   est.2013 <- Sight.Est(observed ~ voc, odat = subset(obs, year == 2013), sdat = exp.m,
                           sampinfo = subset(sampinfo, year == 2013))  
   print(est.2013)
   summary(est.2013)
 
->>>>>>> 5531f9e97c8bb8fd2cb077cf0266128fef78de37
 
 
 # Import three-tier age-at-harvest matrix 
