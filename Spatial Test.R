@@ -53,6 +53,26 @@ Cluster <- function(sf, k, seed){
   V(g)$name <- as.character(1:length(sf$area))
   V(g)$area <- as.numeric(sf$area)
   
+  # Perimeter
+  shared_perimeters <- function(sf, nb) {
+    perim_matrix <- matrix(0, nrow = nrow(sf), ncol = nrow(sf))
+    for (i in seq_along(nb)) {
+      for (j in nb[[i]]) {
+        if (i < j) {
+          shared <- st_intersection(sf[i,], sf[j,])
+          if (nrow(shared) > 0) {
+            length <- st_length(st_union(shared))
+            perim_matrix[i, j] <- length
+            perim_matrix[j, i] <- length
+          }
+        }
+      }
+    }
+    perim_matrix
+  }
+  
+  # Compute shared perimeter matrix once
+  perim_mat <- shared_perimeters(sf, nb)
   
   # Total area and target area per cluster
   total_area <- sum(V(g)$area)
@@ -85,8 +105,18 @@ Cluster <- function(sf, k, seed){
       
       if (length(candidates) == 0) next
       
-      # Pick one with lowest impact on balance
-      best <- candidates[which.min(abs(cluster_area[i] + V(g)$area[candidates] - target_area))]
+      # Score each candidate by balance + compactness
+      scores <- sapply(candidates, function(cand) {
+        # Shared perimeter with current cluster members
+        cluster_members <- which(cluster_assignment == i)
+        shared <- sum(perim_mat[cand, cluster_members])
+        # Area balance score (smaller is better)
+        area_diff <- abs(cluster_area[i] + V(g)$area[cand] - target_area)
+        # Weighted score: you can tune weight
+        -shared + 0.0001 * area_diff  # negative shared so we prefer large values
+      })
+      
+      best <- candidates[which.min(scores)]
       
       cluster_assignment[best] <- i
       cluster_area[i] <- cluster_area[i] + V(g)$area[best]
@@ -101,9 +131,9 @@ Cluster <- function(sf, k, seed){
   
   
   tm_shape(sf) +
-    tm_polygons("cluster", palette = "Set3")
+    tm_polygons("cluster", palette = "Set1")
 }
-Cluster(Zones, 3, 69)
+Cluster(Zones, 5, 69)
 
 
 
