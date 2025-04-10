@@ -41,7 +41,7 @@ obs <- subset(obs, stratum!=4)
 data("exp.m")
 sampinfo <- read.csv("C:\\Users\\Victoria\\Downloads\\sampinfo.csv", header = T)
 
-  # Estimate abundance for year = 2004
+# Estimate abundance for year = 2004
 
   est.2013 <- Sight.Est(observed ~ voc, odat = subset(obs, year == 2013), sdat = exp.m,
                           sampinfo = subset(sampinfo, year == 2013))  
@@ -158,13 +158,13 @@ objectiveFunction <- function(par) {
   #   survivability=3 => separate survival parameters for calves, cows, bulls.
   #
   # par[Y+(A-1)+...] are the relevant parameter slices, each divided by scaleFactor.
-   { 
-      C <- matrix(par[Y + (A - 1) + c(1)] / scaleFactor,  
-                  nrow = Y, ncol = A, byrow = T) 
-      S <- matrix(par[Y + (A - 1) + c(2, 3, 4)] / scaleFactor,  
-                  nrow = Y, ncol = A, byrow = T) 
-    } 
-
+  { 
+    C <- matrix(par[Y + (A - 1) + c(1)] / scaleFactor,  
+                nrow = Y, ncol = A, byrow = T) 
+    S <- matrix(par[Y + (A - 1) + c(2, 3, 4)] / scaleFactor,  
+                nrow = Y, ncol = A, byrow = T) 
+  } 
+  
   
   ## Define probability of harvest 
   { 
@@ -211,17 +211,17 @@ objectiveFunction <- function(par) {
       # n_u is the number of radio-collared moose available to be hunted,
       # u is how many of those were actually hunted.
       # Again, binomial with n_u trials, prob=P.
-     logL_R1 <- binom_coeff_log(n_u,u) + u*log(P) + (n_u-u)*log(1-P)
-     logL_R1[u==0] = 0
-     logL_R1[n_u==0] = 0
-     
-     # n_v is the number of radio-collared moose available to die from other causes,
-     # v is how many actually died from those causes.
-     # Probability of non-harvest death = 1 - survival (S).
-     
-     logL_R2 <- binom_coeff_log(n_v,v) + v*log(1-S) + (n_v-v)*log(S)
-     logL_R2[v==0] = 0
-     logL_R2 [n_v==0] = 0
+      logL_R1 <- binom_coeff_log(n_u,u) + u*log(P) + (n_u-u)*log(1-P)
+      logL_R1[u==0] = 0
+      logL_R1[n_u==0] = 0
+      
+      # n_v is the number of radio-collared moose available to die from other causes,
+      # v is how many actually died from those causes.
+      # Probability of non-harvest death = 1 - survival (S).
+      
+      logL_R2 <- binom_coeff_log(n_v,v) + v*log(1-S) + (n_v-v)*log(S)
+      logL_R2[v==0] = 0
+      logL_R2 [n_v==0] = 0
     }
     
     ### Aerial survey
@@ -266,7 +266,7 @@ objectiveFunction <- function(par) {
 
 # Optimize parameter space using a numerical optimization method
 { 
-      
+  
   ### Optimize objective function using the BFGS method 
   { 
     returnPopulationAbundance <- FALSE 
@@ -280,11 +280,11 @@ objectiveFunction <- function(par) {
     estimatedN <- objectiveFunction(optimized$par) 
     
     pointEstimatesBFG[1, ] <- c(optimized$par, 
-                                         optimized$value) 
+                                optimized$value) 
     populationSizeBFG[1, ] <- rowSums(estimatedN) 
     returnPopulationAbundance <- FALSE 
   } 
- 
+  
 }
 
 # Extract uncertainty estimates for best-fit model 
